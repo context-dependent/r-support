@@ -201,3 +201,65 @@ option_two_v <- option_two_iv |>
     )
 
 all_equal(option_two_v, fake_cleaned_data)
+
+
+# BONUS ROUND: Summarizing!
+
+# what's the easiest way to generate counts and
+# percentages from this kind of data, once it's
+# been booleanized?
+
+# I'm going to illustrate the answer in two steps:
+
+# 1) how to summarize one column,
+# 2) how to do the same summary across all the columns of interest
+
+# 1) summarizing once: hss_english
+english_summary_tab <- fake_cleaned_data |>
+    summarize(
+        hss_english_N = sum(!is.na(hss_english)),
+        hss_english_n = sum(na.omit(hss_english)),
+        hss_english_p = mean(na.omit(hss_english))
+    )
+
+english_summary_tab
+
+# 2a) summarizing `across` [Option A]
+#   produces a dataframe with one result column per
+#   source column per indicator.
+#   In this example, we're calculating three indicators
+#   for each of 5 columns, which will yield 15 total summary columns.
+full_summary_tab_wide <- fake_cleaned_data |>
+    summarize(
+        across(
+            matches("hss"),
+            list(
+                N = function(x) sum(!is.na(x)),
+                n = function(x) sum(na.omit(x)),
+                p = function(x) mean(na.omit(x))
+            )
+        )
+    )
+
+
+# 2b) pivot, group, summarize [Option B]
+#   this approach yields a long dataframe with one row per
+#   select-all option, and a column per indicator.
+
+full_summary_tab_long <- fake_cleaned_data |>
+    pivot_longer(
+        matches("hss"),
+        names_to = "response_option",
+        values_to = "response_value"
+    ) |>
+    group_by(response_option) |>
+    summarize(
+        N = sum(!is.na(hss_english)),
+        n = sum(na.omit(hss_english)),
+        p = mean(na.omit(hss_english))
+    )
+
+# You'll note that the summarize() step in this chain looks
+# very close to the first example, summarizing hss_english.
+# It is! The difference in the output is driven by the
+# changes we're making to the data by pivoting and then grouping.
